@@ -4,6 +4,11 @@
  *   <script src="https://xb2bx-ai-chatbot-backend.vercel.app/widget.js" defer></script>
  * No iframe, no dependencies. Renders inside a Shadow DOM (style-isolated) and
  * talks to this same backend's /api/chat/stream (token-by-token streaming).
+ *
+ * v2 additions:
+ *   - Tiered quick menus (main menu + sub-menus) instead of a flat 4-button list
+ *   - Contextual follow-up chips after each assistant reply
+ *   - "Menu" chip to reopen the main menu at any point in the conversation
  */
 (function () {
   if (window.__xb2bxChat) return;
@@ -27,12 +32,105 @@
     footer: 'Powered by XB2BX · AI Trade Assistant available 24/7',
     welcomeTitle: 'Welcome to XB2BX',
     welcomeText: 'Meet your AI trade assistant. Source suppliers, get quotes, and find answers — all in one friendly conversation.',
-    greeting: "Hello! 👋 I'm your **XB2BX** trade assistant. Ask me about products, suppliers, RFQs, selling, or membership — what can I do for you today?",
-    quick: [
-      ['🔎', 'Find suppliers', 'I want to find suppliers for a product.'],
-      ['📦', 'Browse products', 'What product categories are available on XB2BX?'],
-      ['💳', 'Selling & membership', 'How do I start selling on XB2BX?'],
-      ['💬', 'Talk to support', 'I need help from customer support.']
+    greeting: "Hello! 👋 I'm your **XB2BX** trade assistant. Pick a topic below or just type your question — what can I do for you today?",
+
+    // ---- Tiered menus ----------------------------------------------------
+    // Each item: [emoji, label, action]
+    //   action.send -> sends that text as a user message
+    //   action.menu -> opens the named sub-menu
+    menus: {
+      main: {
+        title: null,
+        items: [
+          ['🔎', 'Find suppliers',        { menu: 'suppliers' }],
+          ['📦', 'Browse products',       { menu: 'products' }],
+          ['📄', 'Request a quote (RFQ)', { send: 'I want to submit a request for quotation (RFQ).' }],
+          ['🚚', 'Shipping & logistics',  { menu: 'logistics' }],
+          ['💳', 'Selling & membership',  { menu: 'selling' }],
+          ['💬', 'Talk to support',       { send: 'I need help from customer support.' }]
+        ]
+      },
+      suppliers: {
+        title: 'Find suppliers',
+        items: [
+          ['🌍', 'By country or region',   { send: 'I want to find suppliers in a specific country or region.' }],
+          ['🏷️', 'By product category',    { send: 'I want to find suppliers by product category.' }],
+          ['✅', 'Verified suppliers only', { send: 'How do I find verified suppliers on XB2BX?' }],
+          ['🛡️', 'Check a supplier',       { send: 'How can I check a supplier before doing business with them?' }],
+          ['↩️', 'Back to menu',           { menu: 'main' }]
+        ]
+      },
+      products: {
+        title: 'Browse products',
+        items: [
+          ['🗂️', 'All categories',     { send: 'What product categories are available on XB2BX?' }],
+          ['🔤', 'Search by keyword',  { send: 'I want to search for a product by keyword.' }],
+          ['⭐', 'Featured products',  { send: 'Show me featured or popular products on XB2BX.' }],
+          ['↩️', 'Back to menu',       { menu: 'main' }]
+        ]
+      },
+      logistics: {
+        title: 'Shipping & logistics',
+        items: [
+          ['🚢', 'Shipping options',      { send: 'What shipping and freight options does XB2BX support?' }],
+          ['🧾', 'Incoterms explained',   { send: 'Can you explain Incoterms and which ones XB2BX transactions use?' }],
+          ['📍', 'Track an order',        { send: 'How do I track an order or shipment?' }],
+          ['🛃', 'Customs & documents',   { send: 'What customs and trade documents do I need for a cross-border order?' }],
+          ['↩️', 'Back to menu',          { menu: 'main' }]
+        ]
+      },
+      selling: {
+        title: 'Selling & membership',
+        items: [
+          ['🚀', 'Start selling',        { send: 'How do I start selling on XB2BX?' }],
+          ['💼', 'Membership plans',     { send: 'What membership plans does XB2BX offer and what do they include?' }],
+          ['🧾', 'Fees & payments',      { send: 'What are the fees and how do payments work for sellers on XB2BX?' }],
+          ['📈', 'Grow my listings',     { send: 'How can I make my product listings perform better on XB2BX?' }],
+          ['↩️', 'Back to menu',         { menu: 'main' }]
+        ]
+      }
+    },
+
+    // ---- Contextual follow-up chips --------------------------------------
+    // Matched (top-down, first hit wins) against the user's last message once
+    // the assistant reply has finished streaming. Each chip: [label, send].
+    followups: [
+      { re: /supplier|manufactur|factory|vendor/i, chips: [
+        ['Filter by country', 'Can I filter these suppliers by country?'],
+        ['Verified only', 'Show only verified suppliers.'],
+        ['Request quotes', 'I want to request quotes from suppliers.']
+      ]},
+      { re: /rfq|quote|quotation/i, chips: [
+        ['What to include', 'What should I include in my RFQ to get good responses?'],
+        ['Response time', 'How long does it usually take to receive quotes?'],
+        ['Compare offers', 'How do I compare and evaluate the quotes I receive?']
+      ]},
+      { re: /ship|freight|logistic|incoterm|customs|track/i, chips: [
+        ['Estimate costs', 'How can I estimate shipping costs for my order?'],
+        ['Customs documents', 'What customs documents will I need?'],
+        ['Track my order', 'How do I track my shipment?']
+      ]},
+      { re: /sell|membership|fee|listing|plan/i, chips: [
+        ['Compare plans', 'Can you compare the membership plans?'],
+        ['Onboarding steps', 'What are the steps to get my company onboarded as a seller?'],
+        ['Payment terms', 'How and when do sellers get paid?']
+      ]},
+      { re: /product|categor|catalog/i, chips: [
+        ['Find suppliers for this', 'Help me find suppliers for this product.'],
+        ['Request a quote', 'I want to request a quote for this product.'],
+        ['Similar products', 'Show me similar or related products.']
+      ]},
+      { re: /support|help|problem|issue|dispute/i, chips: [
+        ['Open a dispute', 'How do I open a dispute about an order?'],
+        ['Contact a human', 'How do I reach a human support agent?'],
+        ['Account help', 'I need help with my account settings.']
+      ]}
+    ],
+    // Shown when nothing above matches.
+    defaultChips: [
+      ['Find suppliers', 'I want to find suppliers for a product.'],
+      ['Request a quote', 'I want to submit a request for quotation (RFQ).'],
+      ['Talk to support', 'I need help from customer support.']
     ]
   };
 
@@ -125,10 +223,19 @@
     '.bub code{background:rgba(0,0,0,.06);padding:1px 5px;border-radius:5px;font-size:12.5px;font-family:ui-monospace,Menlo,monospace}',
     '.bub table{display:block;width:100%;overflow-x:auto;border-collapse:collapse;margin:8px 0;font-size:13px;white-space:nowrap}',
     '.bub th,.bub td{border:1px solid rgba(0,0,0,.1);padding:7px 10px;text-align:left}.bub th{background:#fff0f2;font-weight:700}',
+    // Tiered quick-reply menus
     '.quick{display:flex;flex-direction:column;gap:9px;padding:2px 0 4px 38px}',
+    '.qtitle{font-size:11px;font-weight:600;letter-spacing:1.2px;text-transform:uppercase;color:#8a8a93;padding:2px 2px 0}',
     '.qr{display:flex;align-items:center;gap:11px;width:100%;text-align:left;background:#fff;border:1px solid rgba(0,0,0,.08);border-radius:14px;padding:13px 15px;font-size:14px;font-weight:500;color:#1f2027;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.04);transition:transform .12s ease,box-shadow .15s ease}',
     '.qr:hover{transform:translateY(-1px);box-shadow:0 6px 16px rgba(0,0,0,.09)}',
     '.qr .e{font-size:17px}',
+    '.qr .more{margin-left:auto;color:#c3c3ca;font-size:13px}',
+    // Contextual follow-up chips
+    '.chips{display:flex;flex-wrap:wrap;gap:8px;padding:0 0 4px 38px}',
+    '.chip{background:#fff;border:1px solid rgba(255,58,89,.35);color:rgb(214,36,64);border-radius:999px;padding:8px 14px;font-size:13px;font-weight:500;cursor:pointer;transition:background .12s ease,transform .12s ease}',
+    '.chip:hover{background:#fff0f2;transform:translateY(-1px)}',
+    '.chip.menu{border-color:rgba(0,0,0,.14);color:#5a5a63}',
+    '.chip.menu:hover{background:#f1f1f4}',
     '.typing{display:inline-flex;gap:5px;padding:14px 16px}',
     '.typing i{width:7px;height:7px;border-radius:50%;background:rgba(0,0,0,.32);animation:bl 1.3s infinite both}',
     '.typing i:nth-child(2){animation-delay:.18s}.typing i:nth-child(3){animation-delay:.36s}',
@@ -170,6 +277,8 @@
 
   // ---- State ----
   var started = false, busy = false, convId = null, messages = [];
+  var activeMenu = 'main';   // name of the menu currently shown, or null
+  var chips = null;          // contextual follow-up chips, or null
 
   function open(v) {
     if (v) { panel.classList.add('open'); launcher.innerHTML = ICON_X; launcher.setAttribute('aria-label', 'Close chat'); if (innerWidth <= 480) launcher.style.display = 'none'; }
@@ -195,6 +304,39 @@
     paint();
   }
 
+  // Pick contextual follow-ups from the user's last message.
+  function pickChips() {
+    var last = null;
+    for (var i = messages.length - 1; i >= 0; i--) { if (messages[i].role === 'user') { last = messages[i].content; break; } }
+    if (!last) return null;
+    for (var j = 0; j < CFG.followups.length; j++) {
+      if (CFG.followups[j].re.test(last)) return CFG.followups[j].chips;
+    }
+    return CFG.defaultChips;
+  }
+
+  function menuHTML(name) {
+    var m = CFG.menus[name]; if (!m) return '';
+    var html = '<div class="quick">';
+    if (m.title) html += '<div class="qtitle">' + esc(m.title) + '</div>';
+    for (var q = 0; q < m.items.length; q++) {
+      var it = m.items[q];
+      html += '<button class="qr" data-menu="' + esc(name) + '" data-i="' + q + '">' +
+        '<span class="e">' + it[0] + '</span><span>' + esc(it[1]) + '</span>' +
+        (it[2].menu && it[2].menu !== 'main' ? '<span class="more">›</span>' : '') +
+        '</button>';
+    }
+    html += '</div>';
+    return html;
+  }
+
+  function chipsHTML() {
+    var html = '<div class="chips">';
+    for (var c = 0; c < chips.length; c++) html += '<button class="chip" data-c="' + c + '">' + esc(chips[c][0]) + '</button>';
+    html += '<button class="chip menu" data-c="menu">☰ Menu</button></div>';
+    return html;
+  }
+
   function paint() {
     var msgs = body.querySelector('.msgs'); if (!msgs) return;
     var html = '';
@@ -203,26 +345,47 @@
       if (m.role === 'user') html += '<div class="row u"><div class="bub u">' + esc(m.content) + '</div></div>';
       else html += '<div class="row"><div class="ma"><img src="' + LOGO + '"/></div><div class="bub b">' + md(m.content) + '</div></div>';
     }
-    var noUser = !messages.some(function (m) { return m.role === 'user'; });
-    if (started && noUser) {
-      html += '<div class="quick">';
-      for (var q = 0; q < CFG.quick.length; q++) html += '<button class="qr" data-q="' + q + '"><span class="e">' + CFG.quick[q][0] + '</span><span>' + CFG.quick[q][1] + '</span></button>';
-      html += '</div>';
+    if (!busy) {
+      if (activeMenu) html += menuHTML(activeMenu);
+      else if (chips && chips.length) html += chipsHTML();
     }
     if (busy) html += '<div class="row"><div class="ma"><img src="' + LOGO + '"/></div><div class="bub b typing"><i></i><i></i><i></i></div></div>';
     msgs.innerHTML = html;
+
+    // Menu buttons
     var qs = msgs.querySelectorAll('.qr');
-    for (var k = 0; k < qs.length; k++) qs[k].onclick = (function (idx) { return function () { ask(CFG.quick[idx][2]); }; })(Number(qs[k].getAttribute('data-q')));
+    for (var k = 0; k < qs.length; k++) {
+      qs[k].onclick = (function (menuName, idx) {
+        return function () {
+          var action = CFG.menus[menuName].items[idx][2];
+          if (action.menu) { activeMenu = action.menu; paint(); }
+          else if (action.send) { ask(action.send); }
+        };
+      })(qs[k].getAttribute('data-menu'), Number(qs[k].getAttribute('data-i')));
+    }
+    // Follow-up chips
+    var cs = msgs.querySelectorAll('.chip');
+    for (var c = 0; c < cs.length; c++) {
+      cs[c].onclick = (function (key) {
+        return function () {
+          if (key === 'menu') { activeMenu = 'main'; chips = null; paint(); }
+          else { ask(chips[Number(key)][1]); }
+        };
+      })(cs[c].getAttribute('data-c'));
+    }
     msgs.scrollTop = msgs.scrollHeight;
   }
 
-  function start() { started = true; messages = [{ role: 'assistant', content: CFG.greeting }]; renderChat(); }
+  function start() { started = true; messages = [{ role: 'assistant', content: CFG.greeting }]; activeMenu = 'main'; chips = null; renderChat(); }
 
   function ask(text) {
     messages.push({ role: 'user', content: text });
+    activeMenu = null; chips = null;
     busy = true; paint();
     var payload = messages.filter(function (m, i) { return !(i === 0 && m.role === 'assistant'); });
     var botIndex = -1, first = true;
+
+    function finish() { busy = false; chips = pickChips(); paint(); }
 
     fetch(API, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ messages: payload, session_id: sid(), conversation_id: convId }) })
       .then(function (res) {
@@ -230,7 +393,7 @@
         var reader = res.body.getReader(), dec = new TextDecoder(), buf = '';
         (function pump() {
           return reader.read().then(function (r) {
-            if (r.done) { busy = false; paint(); return; }
+            if (r.done) { finish(); return; }
             buf += dec.decode(r.value, { stream: true });
             var idx;
             while ((idx = buf.indexOf('\n\n')) !== -1) {
@@ -245,16 +408,17 @@
               } else if (ev === 'done') {
                 if (d.conversation_id) convId = d.conversation_id;
                 if (first && d.reply) { messages.push({ role: 'assistant', content: d.reply }); }
-                busy = false; paint();
+                finish();
               } else if (ev === 'error') {
-                busy = false; messages.push({ role: 'assistant', content: '⚠️ ' + (d.message || 'Something went wrong.') + '\n\nPlease try again.' }); paint();
+                busy = false; chips = null;
+                messages.push({ role: 'assistant', content: '⚠️ ' + (d.message || 'Something went wrong.') + '\n\nPlease try again.' }); paint();
               }
             }
             return pump();
           });
         })();
       })
-      .catch(function () { busy = false; messages.push({ role: 'assistant', content: '⚠️ Network error. Please try again in a moment.' }); paint(); });
+      .catch(function () { busy = false; chips = null; messages.push({ role: 'assistant', content: '⚠️ Network error. Please try again in a moment.' }); paint(); });
   }
 
   renderWelcome();
