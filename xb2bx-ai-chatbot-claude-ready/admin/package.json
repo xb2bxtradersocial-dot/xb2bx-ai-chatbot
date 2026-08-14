@@ -1,0 +1,22 @@
+{
+  "name": "xb2bx-assistant-admin",
+  "version": "1.0.0",
+  "description": "XB2BX AI Assistant — admin panel (React + Vite).",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "lucide-react": "^0.451.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.26.2"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.1",
+    "playwright": "^1.48.0",
+    "vite": "^5.4.8"
+  }
+}

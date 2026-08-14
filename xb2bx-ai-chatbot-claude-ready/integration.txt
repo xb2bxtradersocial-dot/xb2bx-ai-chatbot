@@ -1,0 +1,109 @@
+==========================================================
+ XB2BX AI ASSISTANT — WEBSITE INTEGRATION GUIDE
+==========================================================
+
+Your AI chatbot is ready. Adding it to your website takes ONE line of code.
+A floating chat button will appear in the bottom-right corner of every page.
+When a visitor clicks it, the full AI assistant opens — no extra setup needed.
+
+
+----------------------------------------------------------
+ 1) THE EMBED CODE (copy this exactly)
+----------------------------------------------------------
+
+<script src="https://xb2bx-ai-chatbot-backend.vercel.app/widget.js" defer></script>
+
+That single line loads the entire chatbot. You do NOT need to install anything
+else, host any files, or change any other code.
+
+
+----------------------------------------------------------
+ 2) HOW TO ADD IT TO A WORDPRESS WEBSITE
+----------------------------------------------------------
+
+Pick ANY ONE of the methods below (Method A is the easiest and recommended).
+
+--- METHOD A: Free plugin (recommended, safest) ---
+1. In your WordPress dashboard, go to:  Plugins > Add New
+2. Search for "WPCode" (or "Insert Headers and Footers").
+3. Click "Install Now", then "Activate".
+4. Go to:  Code Snippets > Header & Footer   (or "WPCode > Header & Footer").
+5. Paste the embed code into the "Footer" box.
+6. Click "Save Changes".
+Done. Refresh your website — the chat button appears bottom-right.
+
+--- METHOD B: Theme footer file ---
+1. Go to:  Appearance > Theme File Editor
+2. Open the file named  footer.php
+3. Paste the embed code just BEFORE the closing  </body>  tag.
+4. Click "Update File".
+(Note: a theme update can overwrite this file — Method A is more permanent.)
+
+--- METHOD C: Custom HTML block ---
+1. Edit your site footer or any page.
+2. Add a "Custom HTML" block.
+3. Paste the embed code and publish.
+
+
+----------------------------------------------------------
+ 3) HOW TO ADD IT TO A NON-WORDPRESS WEBSITE
+----------------------------------------------------------
+
+Paste the same embed code just before the closing </body> tag of your site's
+HTML (or in your site builder's "custom code / footer" section).
+
+
+----------------------------------------------------------
+ 4) HOW TO CONFIRM IT IS WORKING
+----------------------------------------------------------
+
+1. Open your website in a normal browser tab.
+2. Look at the bottom-right corner — a round red chat button should appear.
+3. Click it. The assistant opens with a welcome screen.
+4. Click "Start Conversation" and ask something, e.g.
+   "How do I sell on XB2BX?"  or  "What product categories do you have?"
+5. You should get an instant, streaming answer.
+
+Quick file check (optional): open this link in a browser —
+   https://xb2bx-ai-chatbot-backend.vercel.app/widget.js
+You should see program code (JavaScript). If you do, the widget is live.
+
+
+----------------------------------------------------------
+ 5) ADMIN PANEL (manage the chatbot)
+----------------------------------------------------------
+
+The admin panel lets you control everything without touching code:
+  - View all conversations, leads, RFQs, and support tickets
+  - Add / edit suppliers and products
+  - Train the chatbot (edit its knowledge / answers)
+  - Change the OpenAI key, AI model, tone, and contact details
+  - Turn the chatbot on or off
+
+Login email:     admin@gmail.com
+Login password:  admin@123!
+
+(You can change these any time.)
+
+
+----------------------------------------------------------
+ 6) GOOD TO KNOW
+----------------------------------------------------------
+
+- The chat button works on desktop and mobile (full-screen on phones).
+- It is style-isolated, so it will not affect or clash with your website design.
+- Answers stream in real time, word by word.
+- Everything (conversations, leads) is saved automatically in your database and
+  visible in the admin panel.
+- Branding (red + white) and the XB2BX logo are already applied.
+
+
+----------------------------------------------------------
+ SUMMARY
+----------------------------------------------------------
+
+Add this one line to your website footer and you're live:
+
+<script src="https://xb2bx-ai-chatbot-backend.vercel.app/widget.js" defer></script>
+
+==========================================================
