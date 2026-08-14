@@ -1,7 +1,7 @@
 {
   "name": "xb2bx-assistant-backend",
   "version": "1.0.0",
-  "description": "XB2BX AI Assistant backend \u2014 Anthropic Claude + Supabase, multi-agent chat, tools, leads, conversations, and a full admin API.",
+  "description": "XB2BX AI Assistant backend — Anthropic Claude (streaming) + Supabase, multi-agent chat, tools, leads, conversations, and admin API.",
   "type": "module",
   "main": "server.js",
   "scripts": {
@@ -12,6 +12,7 @@
     "node": ">=18.17"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.39.0",
     "@supabase/supabase-js": "^2.45.4",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
