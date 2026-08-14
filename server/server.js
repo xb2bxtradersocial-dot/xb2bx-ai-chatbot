@@ -193,69 +193,120 @@ app.get('/api/admin/settings', requireAdmin, h(async (_req, res) => res.json({ s
 app.put('/api/admin/settings', requireAdmin, h(async (req, res) => {
   const patch = { ...(req.body || {}) };
   // Don't overwrite the key with the masked display value.
-  if (typeof patch.anthropic_api_key === 'string' && patch.anthropic_api_key.includes('…')) delete patch.anthropic_api_key;
-  delete patch.anthropic_api_key_set;
-  delete patch.openai_api_key;
-  delete patch.openai_api_key_set;
-  await updateSettings(patch);
-  res.json({ settings: await getSettingsForAdmin() });
-}));
+  if (typeof patch.anthropic_api_key === 'string' && patch.anthropic_api_key.includes('…')) delimport { supabase } from './db/supabase.js';
+import { CONFIG } from './config.js';
 
-// Training (knowledge base)
-app.get('/api/admin/knowledge', requireAdmin, h(async (_req, res) => res.json({ knowledge: await listKnowledge() })));
-app.get('/api/admin/knowledge/:key', requireAdmin, h(async (req, res) => {
-  const k = await getKnowledge(req.params.key);
-  if (!k) return res.status(404).json({ error: 'not found' });
-  res.json({ knowledge: k });
-}));
-app.put('/api/admin/knowledge/:key', requireAdmin, h(async (req, res) => res.json({ knowledge: await upsertKnowledge({ ...req.body, key: req.params.key }) })));
-app.delete('/api/admin/knowledge/:key', requireAdmin, h(async (req, res) => res.json(await deleteKnowledge(req.params.key))));
+const CACHE_TTL_MS = 10_000;
+let cache = null;
+let cacheAt = 0;
 
-// Leads
-app.get('/api/admin/leads', requireAdmin, h(async (req, res) => res.json({ leads: await listLeads(req.query) })));
-app.patch('/api/admin/leads/:id', requireAdmin, h(async (req, res) => res.json({ lead: await updateLead(req.params.id, req.body || {}) })));
-app.delete('/api/admin/leads/:id', requireAdmin, h(async (req, res) => res.json(await deleteLead(req.params.id))));
+function parseBool(value, fallback = false) {
+  if (value === undefined || value === null || value === '') return fallback;
+  return String(value).toLowerCase() === 'true';
+}
 
-// Conversations
-app.get('/api/admin/conversations', requireAdmin, h(async (req, res) => res.json({ conversations: await listConversations(req.query) })));
-app.get('/api/admin/conversations/:id', requireAdmin, h(async (req, res) => {
-  const c = await getConversation(req.params.id);
-  if (!c) return res.status(404).json({ error: 'not found' });
-  res.json({ conversation: c });
-}));
-app.patch('/api/admin/conversations/:id', requireAdmin, h(async (req, res) => res.json({ conversation: await updateConversation(req.params.id, req.body || {}) })));
-app.delete('/api/admin/conversations/:id', requireAdmin, h(async (req, res) => res.json(await deleteConversation(req.params.id))));
+function parseNumber(value, fallback) {
+  const n = Number(value);
+  return Number.isFinite(n) ? n : fallback;
+}
 
-// Suppliers (CRUD)
-app.get('/api/admin/suppliers', requireAdmin, h(async (req, res) => res.json({ suppliers: await listSuppliers(req.query) })));
-app.post('/api/admin/suppliers', requireAdmin, h(async (req, res) => res.json({ supplier: await createSupplier(req.body || {}) })));
-app.patch('/api/admin/suppliers/:id', requireAdmin, h(async (req, res) => res.json({ supplier: await updateSupplier(req.params.id, req.body || {}) })));
-app.delete('/api/admin/suppliers/:id', requireAdmin, h(async (req, res) => res.json(await deleteSupplier(req.params.id))));
+async function loadSettingsMap() {
+  const now = Date.now();
 
-// Products (CRUD)
-app.get('/api/admin/products', requireAdmin, h(async (req, res) => res.json({ products: await listProducts(req.query) })));
-app.post('/api/admin/products', requireAdmin, h(async (req, res) => res.json({ product: await createProduct(req.body || {}) })));
-app.patch('/api/admin/products/:id', requireAdmin, h(async (req, res) => res.json({ product: await updateProduct(req.params.id, req.body || {}) })));
-app.delete('/api/admin/products/:id', requireAdmin, h(async (req, res) => res.json(await deleteProduct(req.params.id))));
+  if (cache && now - cacheAt < CACHE_TTL_MS) return cache;
 
-// RFQs
-app.get('/api/admin/rfqs', requireAdmin, h(async (req, res) => res.json({ rfqs: await listRfqs(req.query) })));
-app.patch('/api/admin/rfqs/:id', requireAdmin, h(async (req, res) => res.json({ rfq: await updateRfq(req.params.id, req.body || {}) })));
-app.delete('/api/admin/rfqs/:id', requireAdmin, h(async (req, res) => res.json(await deleteRfq(req.params.id))));
+  const { data, error } = await supabase
+    .from('settings')
+    .select('key,value');
 
-// Listings
-app.get('/api/admin/listings', requireAdmin, h(async (req, res) => res.json({ listings: await listListings(req.query) })));
-app.patch('/api/admin/listings/:id', requireAdmin, h(async (req, res) => res.json({ listing: await updateListing(req.params.id, req.body || {}) })));
-app.delete('/api/admin/listings/:id', requireAdmin, h(async (req, res) => res.json(await deleteListing(req.params.id))));
+  if (error) {
+    console.error('[settings] failed to load settings:', error.message);
+    return cache || {};
+  }
 
-// Tickets
-app.get('/api/admin/tickets', requireAdmin, h(async (req, res) => res.json({ tickets: await listTickets(req.query) })));
-app.patch('/api/admin/tickets/:id', requireAdmin, h(async (req, res) => res.json({ ticket: await updateTicket(req.params.id, req.body || {}) })));
-app.delete('/api/admin/tickets/:id', requireAdmin, h(async (req, res) => res.json(await deleteTicket(req.params.id))));
+  cache = Object.fromEntries(
+    (data || []).map((row) => [row.key, row.value])
+  );
 
-// Escalations
-app.get('/api/admin/escalations', requireAdmin, h(async (req, res) => res.json({ escalations: await listEscalations(req.query) })));
-app.patch('/api/admin/escalations/:id', requireAdmin, h(async (req, res) => res.json({ escalation: await updateEscalation(req.params.id, req.body || {}) })));
-app.delete('/api/admin/escalations/:id', requireAdmin, h(async (req, res) => res.json(await deleteEscalation(req.params.id))));
+  cacheAt = now;
+  return cache;
+}
 
-app.listen(CONFIG.port, () => console.log(`XB2BX Assistant backend (Claude + Supabase) on :${CONFIG.port}`));
+export function clearSettingsCache() {
+  cache = null;
+  cacheAt = 0;
+}
+
+export async function getEffectiveConfig() {
+  const settings = await loadSettingsMap();
+
+  return {
+    botEnabled: parseBool(settings.bot_enabled, true),
+
+    anthropicApiKey:
+      settings.anthropic_api_key ||
+      CONFIG.anthropicApiKey ||
+      '',
+
+    mainModel:
+      settings.anthropic_model ||
+      CONFIG.mainModel,
+
+    routerModel:
+      settings.anthropic_router_model ||
+      CONFIG.routerModel,
+
+    temperature: parseNumber(
+      settings.temperature,
+      CONFIG.temperature
+    ),
+
+    maxTokens: parseNumber(
+      settings.max_tokens,
+      CONFIG.maxTokens
+    ),
+
+    personaExtra: settings.persona_extra || '',
+    companyName: settings.company_name || 'XB2BX',
+    contactEmail: settings.contact_email || '',
+    contactPhone: settings.contact_phone || '',
+    contactHours: settings.contact_hours || ''
+  };
+}
+
+export async function getRuntimeSettings() {
+  return getEffectiveConfig();
+}
+
+export async function getSettingsForAdmin() {
+  const settings = await loadSettingsMap();
+  const key =
+    settings.anthropic_api_key ||
+    CONFIG.anthropicApiKey ||
+    '';
+
+  return {
+    ...settings,
+    anthropic_api_key: key
+      ? `${key.slice(0, 10)}…${key.slice(-4)}`
+      : '',
+    anthropic_api_key_set: Boolean(key)
+  };
+}
+
+export async function updateSettings(updates = {}) {
+  const rows = Object.entries(updates).map(([key, value]) => ({
+    key,
+    value: value === null || value === undefined ? '' : String(value)
+  }));
+
+  if (!rows.length) return;
+
+  const { error } = await supabase
+    .from('settings')
+    .upsert(rows, { onConflict: 'key' });
+
+  if (error) throw error;
+
+  clearSettingsCache();
+}
