@@ -1,43 +1,40 @@
-/**
- * Bootstrap configuration — values needed before the database is reachable.
- * Runtime-tunable settings (OpenAI key, models, persona, contact info, etc.)
- * live in the `settings` table and are read via settings.js so the admin panel
- * can change them without a redeploy. The values here are fallbacks/secrets.
- */
+/** Bootstrap configuration. Runtime AI settings can be changed from the admin panel. */
 import 'dotenv/config';
 
 export const CONFIG = {
-  // Server
   port: Number(process.env.PORT || 8787),
   allowedOrigins: (process.env.ALLOWED_ORIGINS || '*')
     .split(',')
     .map((s) => s.trim())
     .filter(Boolean),
 
-  // Supabase (Postgres) — the database
   supabaseUrl: process.env.SUPABASE_URL || '',
   supabaseServiceKey: process.env.SUPABASE_SERVICE_ROLE_KEY || '',
 
-  // OpenAI fallbacks (used only if the settings table has no value)
-  openaiApiKey: process.env.OPENAI_API_KEY || '',
-  mainModel: process.env.OPENAI_MODEL || 'gpt-4o',
-  routerModel: process.env.OPENAI_ROUTER_MODEL || 'gpt-4o-mini',
+  anthropicApiKey: process.env.ANTHROPIC_API_KEY || '',
+  mainModel: process.env.ANTHROPIC_MODEL || 'claude-sonnet-4-20250514',
+  routerModel: process.env.ANTHROPIC_ROUTER_MODEL || 'claude-sonnet-4-20250514',
   temperature: Number(process.env.TEMPERATURE ?? 0.6),
   maxTokens: Number(process.env.MAX_TOKENS || 1400),
   maxToolHops: Number(process.env.MAX_TOOL_HOPS || 6),
 
-  // Admin auth — the admin panel logs in with email + password, then uses
-  // adminToken as the bearer for every admin API call.
   adminToken: process.env.ADMIN_TOKEN || '',
-  adminEmail: (process.env.ADMIN_EMAIL || 'admin@gmail.com').trim().toLowerCase(),
+  adminEmail: (process.env.ADMIN_EMAIL || 'admin@gmail.com')
+    .trim()
+    .toLowerCase(),
   adminPassword: process.env.ADMIN_PASSWORD || 'admin@123!'
 };
 
 export function assertConfig() {
   if (!CONFIG.supabaseUrl || !CONFIG.supabaseServiceKey) {
-    console.warn('\n[config] WARNING: SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY not set. Database calls will fail until you add them to .env.\n');
+    console.warn(
+      '\n[config] WARNING: SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY not set. Database calls will fail until configured.\n'
+    );
   }
+
   if (!CONFIG.adminToken) {
-    console.warn('[config] WARNING: ADMIN_TOKEN not set — the admin panel will reject all logins.');
+    console.warn(
+      '[config] WARNING: ADMIN_TOKEN not set — the admin panel will reject all logins.'
+    );
   }
 }
