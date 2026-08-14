@@ -136,9 +136,7 @@ export default function Settings() {
         </section>
 
         <section className="card">
-          <h3 className="section-title">
-            Anthropic / Claude
-          </h3>
+          <h3 className="section-title">Anthropic / Claude</h3>
 
           <Field
             label="API key"
@@ -177,10 +175,7 @@ export default function Settings() {
               className="input"
               value={s.anthropic_router_model || ''}
               onChange={(e) =>
-                set(
-                  'anthropic_router_model',
-                  e.target.value
-                )
+                set('anthropic_router_model', e.target.value)
               }
               placeholder="claude-sonnet-4-20250514"
             />
@@ -213,9 +208,7 @@ export default function Settings() {
         </section>
 
         <section className="card">
-          <h3 className="section-title">
-            Contact info
-          </h3>
+          <h3 className="section-title">Contact info</h3>
 
           <Field label="Support email">
             <input
