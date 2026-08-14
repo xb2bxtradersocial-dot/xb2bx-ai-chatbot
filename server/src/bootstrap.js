@@ -8,16 +8,19 @@ import { CONFIG } from './config.js';
 import { DEFAULT_KNOWLEDGE } from './knowledge.js';
 
 export async function ensureSeed() {
-  if (!CONFIG.supabaseUrl || !CONFIG.supabaseServiceKey) return; // nothing to seed against
+  if (!CONFIG.supabaseUrl || !CONFIG.supabaseServiceKey) return;
 
   try {
     // Settings
-    const { count: settingsCount } = await supabase.from('settings').select('*', { count: 'exact', head: true });
+    const { count: settingsCount } = await supabase
+      .from('settings')
+      .select('*', { count: 'exact', head: true });
+
     if (!settingsCount) {
       const defaults = {
         bot_enabled: 'true',
-        openai_model: CONFIG.mainModel,
-        openai_router_model: CONFIG.routerModel,
+        anthropic_model: CONFIG.mainModel,
+        anthropic_router_model: CONFIG.routerModel,
         temperature: String(CONFIG.temperature),
         max_tokens: String(CONFIG.maxTokens),
         persona_extra: '',
@@ -25,18 +28,31 @@ export async function ensureSeed() {
         contact_email: '',
         contact_phone: '',
         contact_hours: '',
-        // Store the env key in the DB so the admin can see/replace it later.
-        openai_api_key: CONFIG.openaiApiKey || ''
+        anthropic_api_key: CONFIG.anthropicApiKey || ''
       };
-      const rows = Object.entries(defaults).map(([key, value]) => ({ key, value }));
+
+      const rows = Object.entries(defaults).map(([key, value]) => ({
+        key,
+        value
+      }));
+
       await supabase.from('settings').upsert(rows, { onConflict: 'key' });
       console.log(`[bootstrap] seeded ${rows.length} settings.`);
     }
 
     // Knowledge
-    const { count: kCount } = await supabase.from('knowledge').select('*', { count: 'exact', head: true });
+    const { count: kCount } = await supabase
+      .from('knowledge')
+      .select('*', { count: 'exact', head: true });
+
     if (!kCount) {
-      const rows = Object.entries(DEFAULT_KNOWLEDGE).map(([key, v]) => ({ key, title: v.title, content: v.content, enabled: true }));
+      const rows = Object.entries(DEFAULT_KNOWLEDGE).map(([key, v]) => ({
+        key,
+        title: v.title,
+        content: v.content,
+        enabled: true
+      }));
+
       await supabase.from('knowledge').upsert(rows, { onConflict: 'key' });
       console.log(`[bootstrap] seeded ${rows.length} knowledge sections.`);
     }
