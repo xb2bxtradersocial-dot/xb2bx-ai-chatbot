@@ -1,7 +1,6 @@
 /**
  * Tools — the action layer that turns the assistant from a chatbot into a
- * business tool. Each tool has a SCHEMA (sent to the model in OpenAI function
- * format) and an EXECUTOR (runs server-side and is wired to the real database
+ * business tool. Each tool has a SCHEMA (sent to Claude as a client tool) and an EXECUTOR (runs server-side and is wired to the real database
  * via the repositories). Add a tool here, then list its name on the agents in
  * agents.js that should be allowed to use it.
  */
@@ -13,7 +12,7 @@ import { createListing } from './repositories/listings.js';
 import { createTicket, createEscalation } from './repositories/tickets.js';
 import { checkProhibited } from './repositories/policy.js';
 
-// ---- Tool schemas (OpenAI function format), keyed by name ----
+// ---- Tool schemas (JSON Schema), keyed by name ----
 export const TOOL_SCHEMAS = {
   search_suppliers: {
     description:
@@ -160,13 +159,14 @@ export const EXECUTORS = {
   }
 };
 
-/** Build the OpenAI tools array for a given list of tool names. */
+/** Build the Anthropic client-tools array for a given list of tool names. */
 export function toolsFor(names = []) {
   return names
     .filter((n) => TOOL_SCHEMAS[n])
     .map((n) => ({
-      type: 'function',
-      function: { name: n, description: TOOL_SCHEMAS[n].description, parameters: TOOL_SCHEMAS[n].parameters }
+      name: n,
+      description: TOOL_SCHEMAS[n].description,
+      input_schema: TOOL_SCHEMAS[n].parameters
     }));
 }
 
@@ -174,6 +174,7 @@ export function toolsFor(names = []) {
 export async function runTool(name, input) {
   const fn = EXECUTORS[name];
   if (!fn) return JSON.stringify({ error: 'unknown tool: ' + name });
+
   try {
     const out = await fn(input || {});
     return JSON.stringify(out);
