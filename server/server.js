@@ -1,5 +1,5 @@
 /**
- * XB2BX Assistant — server (OpenAI + Supabase).
+ * XB2BX Assistant — server (Claude + Supabase).
  *
  * PUBLIC
  *   GET  /api/health
@@ -188,12 +188,14 @@ app.delete('/api/admin/accounts/:id', requireAdmin, h(async (req, res) => res.js
 
 app.get('/api/admin/stats', requireAdmin, h(async (_req, res) => res.json(await getStats())));
 
-// Settings (chatbot control: OpenAI key, models, persona, contact, on/off)
+// Settings (chatbot control: Claude key, models, persona, contact, on/off)
 app.get('/api/admin/settings', requireAdmin, h(async (_req, res) => res.json({ settings: await getSettingsForAdmin() })));
 app.put('/api/admin/settings', requireAdmin, h(async (req, res) => {
   const patch = { ...(req.body || {}) };
   // Don't overwrite the key with the masked display value.
-  if (typeof patch.openai_api_key === 'string' && patch.openai_api_key.includes('…')) delete patch.openai_api_key;
+  if (typeof patch.anthropic_api_key === 'string' && patch.anthropic_api_key.includes('…')) delete patch.anthropic_api_key;
+  delete patch.anthropic_api_key_set;
+  delete patch.openai_api_key;
   delete patch.openai_api_key_set;
   await updateSettings(patch);
   res.json({ settings: await getSettingsForAdmin() });
@@ -256,4 +258,4 @@ app.get('/api/admin/escalations', requireAdmin, h(async (req, res) => res.json({
 app.patch('/api/admin/escalations/:id', requireAdmin, h(async (req, res) => res.json({ escalation: await updateEscalation(req.params.id, req.body || {}) })));
 app.delete('/api/admin/escalations/:id', requireAdmin, h(async (req, res) => res.json(await deleteEscalation(req.params.id))));
 
-app.listen(CONFIG.port, () => console.log(`XB2BX Assistant backend (OpenAI + Supabase) on :${CONFIG.port}`));
+app.listen(CONFIG.port, () => console.log(`XB2BX Assistant backend (Claude + Supabase) on :${CONFIG.port}`));
